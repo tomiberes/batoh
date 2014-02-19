@@ -238,7 +238,7 @@ Simple server synchronization with assumptions.
 ###TODO:
   karma test runner
 
-  Batoh.sync conflict resolution and resting
+  Batoh.sync conflict resolution and testing
 
   `examples/`
 

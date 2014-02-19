@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Title &amp; Meta -->
+    <title>Batoh tests</title>
+    <meta charset="utf-8">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../node_modules/mocha/mocha.css">
+</head>
+
+<body>
+
+    <div id="mocha"></div>
+
+    <!-- Testing Libs -->
+    <script src="../node_modules/mocha/mocha.js"></script>
+    <script src="../node_modules/chai/chai.js"></script>
+    <!-- <script src="lib/sinon/sinon.js"></script> -->
+    <script>
+        // Use the expect version of chai assertions - http://chaijs.com/api/bdd
+        // var expect = chai.expect;
+
+        // Use assert for TDD
+        var assert = chai.assert;
+
+        // Tell mocha we want TDD syntax
+        mocha.setup('tdd');
+        // Or use BDD syntax
+        // mocha.setup('bdd');
+    </script>
+
+    <!-- Libs -->
+    <script src="../node_modules/jquery/dist/jquery.js"></script>
+    <script src="../node_modules/underscore/underscore.js"></script>
+    <script src="../node_modules/backbone/backbone.js"></script>
+
+    <!-- Source files -->
+    <script src="../src/batoh.js"></script>
+    <script src="../src/sync.js"></script>
+    <script src="../src/adapters/backbone-adapter.js"></script>
+
+    <!-- Tests -->
+    <script src="batoh.js"></script>
+    <script src="sync.js"></script>
+    <script src="adapters/backbone-adapter.js"></script>
+
+    <script>
+        mocha.run();
+    </script>
+
+</body>
+</html>

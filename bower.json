@@ -1,0 +1,25 @@
+{
+    "name": "batoh",
+    "version": "0.0.1",
+    "description": "IndexedDB wrapper.",
+    "authors": [
+        "Tomas Beres <tomiberes@gmail.com>"
+    ],
+    "homepage": "https://github.com/tomiberes/batoh",
+    "keywords": [
+        "indexeddb",
+        "database",
+        "browser"
+    ],
+    "repository"  : {
+        "type": "git",
+        "url": "https://github.com/tomiberes/batoh"
+    },
+    "license": "MIT",
+    "main": "dist/batoh.js"
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "test"
+    ]
+}

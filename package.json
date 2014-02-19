@@ -1,0 +1,37 @@
+{
+    "name": "batoh",
+    "version": "0.0.1",
+    "description": "IndexedDB wrapper.",
+    "authors": [
+        "Tomas Beres <tomiberes@gmail.com>"
+    ],
+    "homepage": "https://github.com/tomiberes/batoh",
+    "keywords": [
+        "indexeddb",
+        "database",
+        "browser"
+    ],
+    "repository"  : {
+        "type": "git",
+        "url": "https://github.com/tomiberes/batoh"
+    },
+    "license": "MIT",
+    "devDependencies": {
+        "gulp": "",
+        "gulp-jshint": "",
+        "gulp-concat": "",
+        "gulp-uglify": "",
+        "gulp-rename": "",
+        "gulp-clean": "",
+        "mocha": "~1.15.1",
+        "chai": "~1.8.1",
+        "sinon": "",
+        "karma": "",
+        "karma-mocha": "",
+        "karma-chai": "",
+        "karma-sinon": "",
+        "underscore": "",
+        "backbone": "",
+        "jquery": ""
+    }
+}

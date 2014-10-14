@@ -1,11 +1,34 @@
-// Gulp base
-var gulp = require('gulp');
-// Gulp plugins
-var jshint = require('gulp-jshint');
-var concat = require('gulp-concat');
-var uglify = require('gulp-uglify');
-var rename = require('gulp-rename');
-// Other modules
+var gulp = require('gulp'),
+    jshint = require('gulp-jshint'),
+    concat = require('gulp-concat'),
+    uglify = require('gulp-uglify'),
+    rename = require('gulp-rename'),
+    util = require('gulp-util'),
+    umd = require('gulp-umd');
+
+var sources = {
+  batoh: './src/batoh.js',
+  sync: './src/sync.js',
+  backbone: './src/backbone_sync.js',
+};
+
+var dependencies = {
+  jquery: {
+    name: 'jquery',
+    amd: 'jquery',
+    cjs: 'jquery',
+    global: '$',
+    param: 'jquery'
+  }
+};
+
+function deps() {
+  var dep = [];
+  if (util.env.backbone) dep.push(dependencies.jquery);
+  return function() {
+    return dep;
+  };
+}
 
 gulp.task('lint', function() {
   var sources = './src/**/*.js';
@@ -15,53 +38,24 @@ gulp.task('lint', function() {
     .pipe(jshint.reporter('default'));
 });
 
-gulp.task('test', function() {
-  // TODO: karma tests
-});
-
-gulp.task('dist-solo', function() {
-  var sources = ['src/batoh.js'];
-  return gulp.src(sources)
+gulp.task('dist', function() {
+  var src = [];
+  src.push(sources.batoh);
+  if (util.env.sync) src.push(sources.sync);
+  if (util.env.backbone) src.push(sources.backbone);
+  return gulp.src(src)
+    .pipe(concat('batoh.js'))
+    .pipe(umd({ dependencies: deps() }))
     .pipe(gulp.dest('./dist'))
     .pipe(rename('batoh.min.js'))
     .pipe(uglify())
     .pipe(gulp.dest('./dist'));
 });
 
-gulp.task('dist-sync', function() {
-  var sources = ['src/batoh.js', 'src/sync.js'];
-  return gulp.src(sources)
-    .pipe(concat('batoh-s.js'))
-    .pipe(gulp.dest('./dist'))
-    .pipe(rename('batoh-s.min.js'))
-    .pipe(uglify())
-    .pipe(gulp.dest('./dist'));
-});
-
-gulp.task('dist-backbone', function() {
-  var sources = ['src/batoh.js', 'src/adapters/backbone-adapter.js'];
-  return gulp.src(sources)
-    .pipe(concat('batoh-bb.js'))
-    .pipe(gulp.dest('./dist'))
-    .pipe(rename('batoh-bb.min.js'))
-    .pipe(uglify())
-    .pipe(gulp.dest('./dist'));
-});
-
-gulp.task('dist-sync-backbone', function() {
-  var sources = ['src/batoh.js', 'src/sync.js', 'src/adapters/backbone-adapter.js'];
-  return gulp.src(sources)
-    .pipe(concat('batoh-s-bb.js'))
-    .pipe(gulp.dest('./dist'))
-    .pipe(rename('batoh-s-bb.min.js'))
-    .pipe(uglify())
-    .pipe(gulp.dest('./dist'));
-});
-
-gulp.task('dist', function() {
-  gulp.run('dist-solo', 'dist-sync', 'dist-backbone', 'dist-sync-backbone');
+gulp.task('test', function() {
+  // TODO
 });
 
 gulp.task('default', function() {
-  gulp.run('lint', 'dist');
+  gulp.start('lint', 'dist');
 });

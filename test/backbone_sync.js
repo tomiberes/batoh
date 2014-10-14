@@ -1,5 +1,6 @@
 suite('Batoh.backboneSync', function() {
   this.timeout(2000);
+  Backbone.sync = Batoh.backboneSync;
   var pocket;
   // Cannot use `setup` it's used by mocha
   var batohSetup = {

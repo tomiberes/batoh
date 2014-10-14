@@ -31,247 +31,241 @@
  *  to keep track of the asynchronous operations.
  * @param {String} [options.url] - URL
  */
-(function() {
-  'use strict';
 
-  var Batoh = window.Batoh;
+var sync = Batoh.sync = function(setup, store, options) {
+  var pocket = new Batoh.Pocket(setup);
+  var url = '/' + store || options.url;
+  // Optional callbacks
+  if (options.onComplete) syncComplete = options.onComplete;
+  if (options.onError) handleError = options.onError;
+  if (options.resolveConflict) resolveConflict = options.resolveConflict;
+  var newRecords = [];
+  var updatedRecords = [];
 
-  Batoh.sync = function(setup, store, options) {
-    var pocket = new Batoh.Pocket(setup);
-    var url = '/' + store || options.url;
-    // Optional callbacks
-    if (options.onComplete) syncComplete = options.onComplete;
-    if (options.onError) handleError = options.onError;
-    if (options.resolveConflict) resolveConflict = options.resolveConflict;
-    var newRecords = [];
-    var updatedRecords = [];
+  // Initiate sync by fetching last sync timestamp from store
+  getLastSync();
 
-    // Initiate sync by fetching last sync timestamp from store
-    getLastSync();
-
-      function getLastSync(handleError) {
-      // Get first highest record of `timestamp` from store
-      var query = {
-        index: 'timestamp',
-        range: IDBKeyRange.upperBound(Number.POSITIVE_INFINITY, true),
-        direction: 'prev',
-        limit: 1
-      };
-      pocket.openDB(function() {
-        pocket.query(store, query, function(err, result) {
-          if (err) handleError(err);
-          // If there isn't any result set timestamp to 0,
-          // fetch everything from the server
-          var lastSync = result[0] ? result[0].timestamp : 0;
-          pocket.closeDB();
-          // Continue with fetching remote records
-          getRemoteRecords(lastSync);
-        });
+    function getLastSync(handleError) {
+    // Get first highest record of `timestamp` from store
+    var query = {
+      index: 'timestamp',
+      range: IDBKeyRange.upperBound(Number.POSITIVE_INFINITY, true),
+      direction: 'prev',
+      limit: 1
+    };
+    pocket.openDB(function() {
+      pocket.query(store, query, function(err, result) {
+        if (err) handleError(err);
+        // If there isn't any result set timestamp to 0,
+        // fetch everything from the server
+        var lastSync = result[0] ? result[0].timestamp : 0;
+        pocket.closeDB();
+        // Continue with fetching remote records
+        getRemoteRecords(lastSync);
       });
-    }
+    });
+  }
 
-    // Assumed url, should be configurable
-    // GET /notes?last_sync=`timestamp`
-    function getRemoteRecords(lastSync) {
-      var xhr = new XMLHttpRequest();
-      var resp;
-      xhr.open('GET', url + '?last_sync=' + lastSync, true);
-      xhr.send();
-      xhr.onload = function() {
-        resp = this.response;
-        var remoteRecords = JSON.parse(resp);
-        // Continue with local update
-        localUpdate(remoteRecords);
-      };
-      xhr.onerror = function(err) {
-        handleError(err);
-      };
-    }
+  // Assumed url, should be configurable
+  // GET /notes?last_sync=`timestamp`
+  function getRemoteRecords(lastSync) {
+    var xhr = new XMLHttpRequest();
+    var resp;
+    xhr.open('GET', url + '?last_sync=' + lastSync, true);
+    xhr.send();
+    xhr.onload = function() {
+      resp = this.response;
+      var remoteRecords = JSON.parse(resp);
+      // Continue with local update
+      localUpdate(remoteRecords);
+    };
+    xhr.onerror = function(err) {
+      handleError(err);
+    };
+  }
 
-    function localUpdate(remoteRecords) {
-      // If there no remote records have been fetched goes straight to `getDirtyRecords`
-      var count = makeCounter(remoteRecords.length, pocket, getDirtyRecords);
-      pocket.openDB(function() {
-        if (err) return handleError(err);
-        remoteRecords.forEach(function(remote, index, array) {
-          pocket.get(store, remote.id, function(err, result) {
-            var local = result;
-            if (err) return handleError(err);
-            if (local) {
-              // Conflict
-              if (local.dirty === true) {
-                // Pass it to conflict resolution method
-                resolveConflict(local, remote, count);
-              // Deletted from different client
-              } else if (remote.deleted === true) {
-                pocket.delete(store, remote.id, function(err, result) {
-                  if (err) return handleError(err);
-                  count();
-                });
-              // Updated from diferrent client
-              } else {
-                pocket.put(store, remote, function(err, result) {
-                  if (err) return handleError(err);
-                  count();
-                });
-              }
-            // New record
+  function localUpdate(remoteRecords) {
+    // If there no remote records have been fetched goes straight to `getDirtyRecords`
+    var count = makeCounter(remoteRecords.length, pocket, getDirtyRecords);
+    pocket.openDB(function() {
+      if (err) return handleError(err);
+      remoteRecords.forEach(function(remote, index, array) {
+        pocket.get(store, remote.id, function(err, result) {
+          var local = result;
+          if (err) return handleError(err);
+          if (local) {
+            // Conflict
+            if (local.dirty === true) {
+              // Pass it to conflict resolution method
+              resolveConflict(local, remote, count);
+            // Deletted from different client
+            } else if (remote.deleted === true) {
+              pocket.delete(store, remote.id, function(err, result) {
+                if (err) return handleError(err);
+                count();
+              });
+            // Updated from diferrent client
             } else {
-              pocket.add(store, remote, function(err, result) {
+              pocket.put(store, remote, function(err, result) {
                 if (err) return handleError(err);
                 count();
               });
             }
-          });
-        });
-      });
-    }
-
-    function resolveConflict(localRecord, remoteRecord, count) {
-      // TODO: no default
-      count();
-    }
-
-    function getDirtyRecords() {
-      var query = {
-        index: 'timestamp',
-        range: null,
-        direction: 'next'
-      };
-      // `each` function for filtering the records inside IndexedDB query, see Batoh core docs
-      var each = function(record) {
-        // Only records which have been changed
-        if (record.dirty === true) {
-          // Records created on client and haven't been synced yet, thus no `timestamp`
-          // Timestamp have to be empty string value, not `null` to be able to query it
-          if (record.timestamp === '') {
-            newRecords.push(record);
-          // Records that have already been synced with the server and have a `timestamp`
+          // New record
           } else {
-            updatedRecords.push(record);
+            pocket.add(store, remote, function(err, result) {
+              if (err) return handleError(err);
+              count();
+            });
           }
-        }
-      };
-      // Perform the query on the store
-      pocket.openDB(function() {
-        pocket.query(store, query, each, function(err, result) {
-          if (err) handleError(err);
-          pocket.closeDB();
-          // Continue with remote update
-          remoteUpdate();
         });
       });
-    }
+    });
+  }
 
-    function remoteUpdate() {
-      // Create counter for updating records remotely and locally afterwards
-      var count = makeCounter((newRecords.length + updatedRecords.length), null, syncComplete);
-      if (newRecords.length > 0) {
-        for (var i = 0; i < newRecords.length; i++) {
-          postRecord(newRecords[i], count);
-        }
-      }
-      if (updatedRecords.length > 0) {
-        for (var j = 0; j < updatedRecords.length; j++) {
-          putRecord(updatedRecords[j], count);
-        }
-      }
-    }
+  function resolveConflict(localRecord, remoteRecord, count) {
+    // TODO: no default
+    count();
+  }
 
-    // POST new record on the server
-    function postRecord(record, count) {
-      var data = JSON.stringify(record);
-      var xhr = new XMLHttpRequest();
-      var resp;
-      xhr.open('POST', url, true);
-      xhr.setRequestHeader('Content-type','application/json; charset=utf-8');
-      xhr.send(data);
-      xhr.onload = function() {
-        resp = JSON.parse(this.response);
-        // Response have to containg `timestamp` generated on the server
-        if (!resp.timestamp) {
-          return handleError(new Error('No timestamp in POST response.'));
-        }
-        record.timestamp = resp.timestamp;
-        updateRecord(record, count);
-      };
-      xhr.onerror = function(err) {
-        handleError(err);
-        count();
-      };
-    }
-
-    // PUT updated record on the server
-    function putRecord(record, count) {
-      var data = JSON.stringify(record);
-      var xhr = new XMLHttpRequest();
-      var resp;
-      xhr.open('PUT', url + '/' + record.id, true);
-      xhr.setRequestHeader('Content-type','application/json; charset=utf-8');
-      xhr.send(data);
-      xhr.onload = function() {
-        resp = JSON.parse(this.response);
-        // Response have to contain new `timestamp` generated by the server
-        if (!resp.timestamp) {
-          return handleError(new Error('No timestamp in PUT response.'));
-        }
-        record.timestamp = resp.timestamp;
-        updateRecord(record, count);
-      };
-      xhr.onerror = function(err) {
-        handleError(err);
-        count();
-      };
-    }
-
-    // Update local record after successful sync
-    function updateRecord(record, count) {
-      pocket.openDB(function() {
-        // Delete record only after server knows about the delete
-        if (record.deleted) {
-          pocket.delete(store, record.id, function(err, result) {
-            pocket.closeDB();
-            count();
-          });
-        // Change state of the local record for next sync and do `count`
+  function getDirtyRecords() {
+    var query = {
+      index: 'timestamp',
+      range: null,
+      direction: 'next'
+    };
+    // `each` function for filtering the records inside IndexedDB query, see Batoh core docs
+    var each = function(record) {
+      // Only records which have been changed
+      if (record.dirty === true) {
+        // Records created on client and haven't been synced yet, thus no `timestamp`
+        // Timestamp have to be empty string value, not `null` to be able to query it
+        if (record.timestamp === '') {
+          newRecords.push(record);
+        // Records that have already been synced with the server and have a `timestamp`
         } else {
-          record.dirty = false;
-          pocket.put(store, record, function(err, result) {
-            pocket.closeDB();
-            count();
-          });
+          updatedRecords.push(record);
         }
+      }
+    };
+    // Perform the query on the store
+    pocket.openDB(function() {
+      pocket.query(store, query, each, function(err, result) {
+        if (err) handleError(err);
+        pocket.closeDB();
+        // Continue with remote update
+        remoteUpdate();
       });
-    }
+    });
+  }
 
-    // Dummy complete handler, should be replaced with `options.onComplete` paramater
-    function syncComplete() {
-      console.log('sync complete');
+  function remoteUpdate() {
+    // Create counter for updating records remotely and locally afterwards
+    var count = makeCounter((newRecords.length + updatedRecords.length), null, syncComplete);
+    if (newRecords.length > 0) {
+      for (var i = 0; i < newRecords.length; i++) {
+        postRecord(newRecords[i], count);
+      }
     }
-
-    // Dummy error handler, should be repalced with `options.onError` parameter
-    function handleError(err, count) {
-      console.error(err.message);
-      if (count) count();
+    if (updatedRecords.length > 0) {
+      for (var j = 0; j < updatedRecords.length; j++) {
+        putRecord(updatedRecords[j], count);
+      }
     }
+  }
 
-    // Counter for async operations
-    function makeCounter(limit, pocket, callback) {
-      if (limit === 0) return callback();
-      var counter = limit;
-      var count = function() {
-        counter--;
-        if (counter === 0) {
-          // `pocket` or `null` have to be passed as second parameter
-          if (pocket) {
-            pocket.closeDB();
-          }
-          return callback();
+  // POST new record on the server
+  function postRecord(record, count) {
+    var data = JSON.stringify(record);
+    var xhr = new XMLHttpRequest();
+    var resp;
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Content-type','application/json; charset=utf-8');
+    xhr.send(data);
+    xhr.onload = function() {
+      resp = JSON.parse(this.response);
+      // Response have to containg `timestamp` generated on the server
+      if (!resp.timestamp) {
+        return handleError(new Error('No timestamp in POST response.'));
+      }
+      record.timestamp = resp.timestamp;
+      updateRecord(record, count);
+    };
+    xhr.onerror = function(err) {
+      handleError(err);
+      count();
+    };
+  }
+
+  // PUT updated record on the server
+  function putRecord(record, count) {
+    var data = JSON.stringify(record);
+    var xhr = new XMLHttpRequest();
+    var resp;
+    xhr.open('PUT', url + '/' + record.id, true);
+    xhr.setRequestHeader('Content-type','application/json; charset=utf-8');
+    xhr.send(data);
+    xhr.onload = function() {
+      resp = JSON.parse(this.response);
+      // Response have to contain new `timestamp` generated by the server
+      if (!resp.timestamp) {
+        return handleError(new Error('No timestamp in PUT response.'));
+      }
+      record.timestamp = resp.timestamp;
+      updateRecord(record, count);
+    };
+    xhr.onerror = function(err) {
+      handleError(err);
+      count();
+    };
+  }
+
+  // Update local record after successful sync
+  function updateRecord(record, count) {
+    pocket.openDB(function() {
+      // Delete record only after server knows about the delete
+      if (record.deleted) {
+        pocket.delete(store, record.id, function(err, result) {
+          pocket.closeDB();
+          count();
+        });
+      // Change state of the local record for next sync and do `count`
+      } else {
+        record.dirty = false;
+        pocket.put(store, record, function(err, result) {
+          pocket.closeDB();
+          count();
+        });
+      }
+    });
+  }
+
+  // Dummy complete handler, should be replaced with `options.onComplete` paramater
+  function syncComplete() {
+    console.log('sync complete');
+  }
+
+  // Dummy error handler, should be repalced with `options.onError` parameter
+  function handleError(err, count) {
+    console.error(err.message);
+    if (count) count();
+  }
+
+  // Counter for async operations
+  function makeCounter(limit, pocket, callback) {
+    if (limit === 0) return callback();
+    var counter = limit;
+    var count = function() {
+      counter--;
+      if (counter === 0) {
+        // `pocket` or `null` have to be passed as second parameter
+        if (pocket) {
+          pocket.closeDB();
         }
-      };
-      return count;
-    }
+        return callback();
+      }
+    };
+    return count;
+  }
 
-  };
-
-})();
+};

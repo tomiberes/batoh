@@ -42,6 +42,35 @@ pocket.[method](store, [params], function(err, result) {
 
 More usage examples can be also found in tests.
 
+###Build:
+Only base wrapper is included by default in dist/ directory.
+To include extras in the build you need to have `gulp` installed and run command
+
+```
+gulp dist --backbone --sync
+```
+
+Options:
+
+`--backbone` adds Batoh.backboneSync module.
+
+`--sync` adds Batoh.sync module.
+
+#####`Batoh.backboneSync(method, object, options)`
+Can be used to replace Backbone.sync, adds UUID attribute as an ID.
+It needs to be done manualy:
+
+```js
+Backbone.sync = Batoh.backboneSync;
+```
+
+Can only `fetch` a collection.
+
+Model `PATCH` operation is not supported.
+
+#####`Batoh.sync(store, setup, options)`
+Simple server synchronization with assumptions.
+
 ###API:
 
 #####`Batoh`
@@ -223,17 +252,7 @@ Example:
 
 ```
 
-#####Misc
 
-#####`Batoh.backboneSync(method, object, options)`
-Replaces Backbone.sync, adds UUID attribute as an ID.
-
-Can only `fetch` a collection.
-
-Model `PATCH` operation is not supported.
-
-#####`Batoh.sync(store, setup, options)`
-Simple server synchronization with assumptions.
 
 ###TODO:
   karma test runner
@@ -243,4 +262,4 @@ Simple server synchronization with assumptions.
   `examples/`
 
 #####Why the name?
-A rucksack, all reasonable names in English are taken.
+A rucksack.

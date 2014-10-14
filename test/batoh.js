@@ -1,6 +1,5 @@
 suite('Batoh', function() {
   this.timeout(2000);
-  // var pocket;
   // Cannot use `setup` it's used by mocha
   var batohSetup = {
     database: 'BatohCoreTest',

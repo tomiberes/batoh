@@ -23,15 +23,14 @@
         "gulp-uglify": "",
         "gulp-rename": "",
         "gulp-clean": "",
+        "gulp-util": "",
+        "gulp-umd": "",
         "mocha": "~1.15.1",
         "chai": "~1.8.1",
-        "sinon": "",
-        "karma": "",
-        "karma-mocha": "",
-        "karma-chai": "",
-        "karma-sinon": "",
         "underscore": "",
         "backbone": "",
         "jquery": ""
-    }
+    },
+    "browser": "dist/batoh.js",
+    "main": "dist/batoh.js"
 }

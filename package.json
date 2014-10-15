@@ -1,6 +1,6 @@
 {
     "name": "batoh",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "IndexedDB wrapper.",
     "authors": [
         "Tomas Beres <tomiberes@gmail.com>"

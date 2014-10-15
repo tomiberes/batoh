@@ -17,7 +17,9 @@ setup: {
       indexes: [
         {
           name: 'food',
-          keyPath: ''
+          keyPath: '',
+          unique: true,
+          multiEntry: false
         }
       ]
     }
@@ -111,11 +113,11 @@ pocket.[method](store, [params], function(err, result) {
 
 #####`Pocket.deleteDB(callback)`
 
-Example:
-
 Delete the database. Once the operation is successful callback is invoked.
 
 `callback` gets one argument `(err)`, if there is no error `err` is null.
+
+Example:
 
 ```js
 pocket.deleteDB(function(err, result) {
@@ -255,7 +257,7 @@ Example:
 
 
 ###TODO:
-  karma test runner
+  more tests
 
   Batoh.sync conflict resolution and testing
 

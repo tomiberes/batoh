@@ -11,7 +11,9 @@ suite('Batoh', function() {
         indexes: [
           {
             name: 'number',
-            keyPath: 'number'
+            keyPath: 'number',
+            unique: true,
+            multiEntry: false
           }
         ]
       },

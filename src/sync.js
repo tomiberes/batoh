@@ -49,7 +49,7 @@ var sync = Batoh.sync = function(setup, store, options) {
     // Get first highest record of `timestamp` from store
     var query = {
       index: 'timestamp',
-      range: IDBKeyRange.upperBound(Number.POSITIVE_INFINITY, true),
+      range: Batoh.IDBKeyRange.upperBound(Number.POSITIVE_INFINITY, true),
       direction: 'prev',
       limit: 1
     };

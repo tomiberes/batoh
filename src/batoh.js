@@ -10,13 +10,18 @@
 /* global window */
 'use strict';
 
-var indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
-var IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || { READ_WRITE: 'readwrite' };
-var IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange;
-
-window.IDBCursor = window.IDBCursor || window.webkitIDBCursor ||  window.mozIDBCursor ||  window.msIDBCursor;
-
 var Batoh = {};
+
+Batoh.IndexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
+Batoh.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || { READ_WRITE: 'readwrite' };
+Batoh.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange;
+Batoh.IDBCursor = window.IDBCursor = window.IDBCursor || window.webkitIDBCursor || window.mozIDBCursor || window.msIDBCursor;
+
+var CONSTS = {
+  READ_ONLY: 'readonly',
+  READ_WRITE: 'readwrite',
+  VERSION_CHANGE: 'versionchange'
+};
 
 /**
  *  Batoh `Pocket` Constructor, creates a setup for specified database
@@ -56,7 +61,7 @@ Pocket.prototype = {
    */
   openDB: function(callback) {
     var self = this;
-    var dbRequest = indexedDB.open(self.setup.database, self.setup.version);
+    var dbRequest = Batoh.IndexedDB.open(self.setup.database, self.setup.version);
     dbRequest.onsuccess = function(event) {
       self.db = event.target.result;
       if (callback && typeof(callback) === 'function') {
@@ -80,9 +85,9 @@ Pocket.prototype = {
         var objectStore = self.db.createObjectStore(storeName,
           { keyPath: store.keyPath, autoIncrement: store.autoIncrement });
         for (var indexNo in store.indexes) {
-          // TODO: more index options, `unique`, `multientry`
-          objectStore.createIndex(store.indexes[indexNo].name,
-            store.indexes[indexNo].keyPath);
+          var index = store.indexes[indexNo];
+          objectStore.createIndex(index.name, index.keyPath,
+            { unique: index.unique, multiEntry: index.multiEntry });
         }
       }
     };
@@ -110,8 +115,8 @@ Pocket.prototype = {
    * thus using only the `onsuccess` handler.
    */
   deleteDB: function(callback) {
-    if (indexedDB.deleteDatabase) {
-      var request = indexedDB.deleteDatabase(this.setup.database);
+    if (Batoh.IndexedDB.deleteDatabase) {
+      var request = Batoh.IndexedDB.deleteDatabase(this.setup.database);
       // It's always in an order of onblocked -> onsuccess,
       // ignoring other handlers, for now.
       request.onsuccess = function(event) {
@@ -167,7 +172,7 @@ Pocket.prototype = {
 
     var result = [];
 
-    var transaction = this.db.transaction(storeName, 'readwrite');
+    var transaction = this.db.transaction(storeName, CONSTS.READ_WRITE);
     transaction.onabort = function(event) {
       if (callback && typeof(callback) === 'function') {
         return callback(event.target.error);
@@ -218,7 +223,7 @@ Pocket.prototype = {
    *  by the key or `undefined`.
    */
   get: function(storeName, key, callback) {
-    var transaction = this.db.transaction(storeName, 'readonly');
+    var transaction = this.db.transaction(storeName, CONSTS.READ_ONLY);
     transaction.onabort = function(event) {
       if (callback && typeof(callback) === 'function') {
         return callback(event.target.error);
@@ -259,8 +264,8 @@ Pocket.prototype = {
    * @param {String} [query.direction] - direction to move the cursor,
    *  `next`, `prev`, `nextunique`, `prevunique`
    * @param {Number} [query.limit] - number of records to retrieve
-   * @param {Boolean} [query.unique] - TODO
-   * @param {Boolean} [query.multiEntry] - TODO
+   * @param {Boolean} [query.unique] - TODO?
+   * @param {Boolean} [query.multiEntry] - TODO?
    * @param {Function} [each] - operation to be called on each cursor value
    * @param {Function} callback - gets two arguments `(err, result)`,
    *  if there is no Error `err` is `null`. `result` is an Array of records,
@@ -279,7 +284,7 @@ Pocket.prototype = {
 
     var result = [];
 
-    var transaction = this.db.transaction(storeName, 'readonly');
+    var transaction = this.db.transaction(storeName, CONSTS.READ_ONLY);
     transaction.onabort = function(event) {
       if (callback && typeof(callback) === 'function') {
         return callback(event.target.error);
@@ -378,7 +383,7 @@ Pocket.prototype = {
 
     var result = [];
 
-    var transaction = this.db.transaction(storeName, 'readwrite');
+    var transaction = this.db.transaction(storeName, CONSTS.READ_WRITE);
 
     transaction.onabort = function(event) {
       if (callback && typeof(callback) === 'function') {
@@ -431,7 +436,7 @@ Pocket.prototype = {
    *  if there is no Error `err` is null.
    */
   delete: function(storeName, key, callback) {
-    var transaction = this.db.transaction(storeName, 'readwrite');
+    var transaction = this.db.transaction(storeName, CONSTS.READ_WRITE);
     transaction.onabort = function(event) {
       if (callback && typeof(callback) === 'function') {
         return callback(event.target.error);
@@ -468,7 +473,7 @@ Pocket.prototype = {
    *  if there is no error `err` is null.
    */
   clear: function(storeName, callback) {
-    var transaction = this.db.transaction(storeName, 'readwrite');
+    var transaction = this.db.transaction(storeName, CONSTS.READ_WRITE);
     transaction.onabort = function(event) {
       if (callback && typeof(callback) === 'function') {
         return callback(event.target.error);

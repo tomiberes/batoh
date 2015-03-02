@@ -33,11 +33,11 @@ setup: {
 ```
 
 ```js
-var pocket = new Batoh.Pocket(setup);
+var db = new Batoh.Database(setup);
 ```
 
 ```js
-pocket.[method](store, [params], function(err, result) {
+db.[method](store, [params], function(err, result) {
   // shuffle more
 });
 ```
@@ -79,11 +79,11 @@ Simple server synchronization with assumptions.
 
 Top-level namespace, global object.
 
-#####`Batoh.Pocket(setup)`
+#####`Batoh.Database(setup)`
 
 Constructor, accepts a setup object.
 
-#####`Pocket.openDB(callback)`
+#####`Database.open(callback)`
 
 Open or create the database specified in `setup` passed to the constructor.
 
@@ -92,26 +92,26 @@ Open or create the database specified in `setup` passed to the constructor.
 Example:
 
 ```js
-pocket.openDB(function() {
-  pocket.[method](store, [params], function(err, result) {
+db.open(function() {
+  db.[method](store, [params], function(err, result) {
     // shuffle more
   });
 });
 ```
 
-#####`Pocket.closeDB()`
+#####`Database.close()`
 
 Always have to close the database in callback after the last operation in chain.
 
 Example:
 
 ```js
-pocket.[method](store, [params], function(err, result) {
-  pocket.closeDB();
+db.[method](store, [params], function(err, result) {
+  db.close();
 });
 ```
 
-#####`Pocket.deleteDB(callback)`
+#####`Database.destroy(callback)`
 
 Delete the database. Once the operation is successful callback is invoked.
 
@@ -120,12 +120,12 @@ Delete the database. Once the operation is successful callback is invoked.
 Example:
 
 ```js
-pocket.deleteDB(function(err, result) {
+db.destroy(function(err, result) {
   // database doesn't exist anymore
 });
 ```
 
-#####`Pocket.add(store, value, [key], callback)`
+#####`Database.add(store, value, [key], callback)`
 
 Add one or more records. If record already exist in object store,
   returns an Error.
@@ -139,8 +139,8 @@ Add one or more records. If record already exist in object store,
   indexes in values Array.
 
 `callback` Function gets two arguments `(err, result)`,
-  if there is no Error `err` is `null`. `result` is a single key or
-  an Array of keys for the values added.
+  if there is no Error `err` is `null`. `result` is always an Array of keys
+  of the values added.
 
 Example:
 
@@ -148,17 +148,38 @@ Example:
 
 ```
 
-#####`Pocket.get(store, key, callback)`
+#####`Database.put(store, value, [key], callback)`
 
-Retrieve a record specified by the key.
+Put one or more records, updating existing or creating a new one.
+
+`store` String, name of them object store to use.
+
+`value` Object or an Array of objects to be stored.
+
+`key` Key or an Array of keys for the values,
+  if an Array is passed indexes have to be corresponding to the indexes in values Array.
+
+`callback` Function, gets two arguments `(err, result)`,
+  if there is no Error `err` is `null`. `result` is always an Array of keys
+  of the values put.
+
+Example:
+
+```js
+
+```
+
+#####`Database.get(store, key, callback)`
+
+Retrieve one or more records specified by the key.
 
 `store` String, name of the object store to use.
 
 `key` String, key that identifies the record to be retrieved.
 
-`callback` Function gets two arguments `(err, result)`,
-  if there is no Error `err` is `null`. `result` is an Object specified,
-  by the key or `undefined`.
+`callback` Function, gets two arguments `(err, result)`,
+  if there is no Error `err` is `null`. `result` is always an Array
+  of the retrieved objects.
 
 Example:
 
@@ -166,7 +187,25 @@ Example:
 
 ```
 
-#####`Pocket.query(store, [query], [each], callback)`
+#####`Database.delete(store, key, callback)`
+
+Delete one or more records specified by the key.
+
+`store` String, name of the object store to use.
+
+`key` String, key that identifies the record to be deleted.
+
+`callback` Function, gets two arguments `(err, result)`,
+  if there is no Error `err` is `null`. `result` is always an Array of the
+  results of delete operations (undefined).
+
+Example:
+
+```js
+
+```
+
+#####`Database.query(store, [query], [each], callback)`
 
 Open a cursor and query the object store.
 
@@ -201,37 +240,14 @@ For `query` parameter examlpe look on `getLastSync` from sync.js.
 
 For `each` parameter example look on `getDirtyRecords` from sync.js.
 
-#####`Pocket.put(store, value, [key], callback)`
+#####`Database.count(store, callback)`
 
-Put one or more records, updating existing or creating a new one.
+Count the objects in the store.
 
-`store` String, name of them object store to use.
-
-`value` Object or an Array of objects to be stored.
-
-`key` Key or an Array of keys for the values,
-  if an Array is passed indexes have to be corresponding to the indexes in values Array.
-
-`callback` Function, gets two arguments `(err, result)`,
-  if there is no Error `err` is `null`. `result` is a single key or
-  an Array of keys for the values put.
-
-Example:
-
-```js
-
-```
-
-#####`Pocket.delete(store, key, callback)`
-
-Delete record specified by the key.
-
-`store` String, name of the object store to use.
-
-`key` String, key that identifies the record to be deleted.
+`store` String, name of the object store to count.
 
 `callback` Function, gets one argument `(err)`,
-  if there is no Error `err` is null.
+  if there is no error `err` is null.
 
 Example:
 
@@ -239,7 +255,7 @@ Example:
 
 ```
 
-#####`Pocket.clear(store, callback)`
+#####`Database.clear(store, callback)`
 
 Delete all records in the object store.
 
@@ -253,7 +269,6 @@ Example:
 ```js
 
 ```
-
 
 
 ###TODO:

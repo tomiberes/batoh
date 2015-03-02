@@ -1,7 +1,7 @@
 suite('Batoh.backboneSync', function() {
   this.timeout(2000);
   Backbone.sync = Batoh.backboneSync;
-  var pocket;
+  var db;
   // Cannot use `setup` it's used by mocha
   var batohSetup = {
     database: 'BatohBackboneTest',
@@ -58,11 +58,11 @@ suite('Batoh.backboneSync', function() {
   // });
 
   suiteSetup(function() {
-    pocket = new Batoh.Pocket(batohSetup);
+    db = new Batoh.Database(batohSetup);
   });
 
   suiteTeardown(function(done) {
-    pocket.deleteDB(function(err, result) {
+    db.destroy(function(err, result) {
       if (err) throw err;
       done();
     });
@@ -128,4 +128,3 @@ suite('Batoh.backboneSync', function() {
   });
 
 });
-

@@ -1,5 +1,5 @@
 suite('Batoh', function() {
-  this.timeout(2000);
+  this.timeout(5000);
   // Cannot use `setup` it's used by mocha
   var batohSetup = {
     database: 'BatohCoreTest',
@@ -34,7 +34,7 @@ suite('Batoh', function() {
       }
     }
   };
-  var pocket = new Batoh.Pocket(batohSetup);
+  var db = new Batoh.Database(batohSetup);
 
   // Cannot have empty (unused) before/after methods, it will missbehave
   // beforeEach in BDD
@@ -50,12 +50,12 @@ suite('Batoh', function() {
 
   // before in BDD ("before all" hook)
   // suiteSetup(function() {
-  //   pocket = new Batoh.Pocket(batohSetup);
+  //   db = new Batoh.Database(batohSetup);
   // });
 
   // after in BDD ("after all" hook)
   suiteTeardown(function(done) {
-    pocket.deleteDB(function(err, result) {
+    db.destroy(function(err, result) {
       if (err) throw err;
       done();
     });
@@ -96,14 +96,14 @@ suite('Batoh', function() {
     ];
 
     test('add one, get it by id and compare', function(done) {
-      pocket.openDB(function(err) {
+      db.open(function(err) {
         if (err) throw err;
-        pocket.add(store, first, function(err, result) {
+        db.add(store, first, function(err, result) {
           if (err) throw err;
-          pocket.get(store, result, function(err, result) {
+          db.get(store, result[0], function(err, result) {
             if (err) throw err;
-            pocket.closeDB();
-            assert.equal(result.hidden, first.hidden, 'same object was returned');
+            db.close();
+            assert.equal(result[0].hidden, first.hidden, 'same object was returned');
             done();
           });
         });
@@ -174,14 +174,14 @@ suite('Batoh', function() {
     };
 
     test('add one', function(done) {
-      pocket.openDB(function(err) {
+      db.open(function(err) {
         if (err) throw err;
-        pocket.add(store, gate, function(err, result) {
+        db.add(store, gate, function(err, result) {
           if (err) throw err;
-          pocket.get(store, result, function(err, result) {
+          db.get(store, result[0], function(err, result) {
             if (err) throw err;
-            pocket.closeDB();
-            assert.equal(gate.keyLock, result.keyLock, 'same object was returned');
+            db.close();
+            assert.equal(gate.keyLock, result[0].keyLock, 'same object was returned');
             done();
           });
         });
@@ -189,14 +189,14 @@ suite('Batoh', function() {
     });
 
     test('pupdate it', function(done) {
-      pocket.openDB(function(err) {
+      db.open(function(err) {
         if (err) throw err;
-        pocket.put(store, fake, function(err, result) {
+        db.put(store, fake, function(err, result) {
           if (err) throw err;
-          pocket.get(store, result, function(err, result) {
+          db.get(store, result[0], function(err, result) {
             if (err) throw err;
-            pocket.closeDB();
-            assert.equal(fake.and, result.and, 'same again');
+            db.close();
+            assert.equal(fake.and, result[0].and, 'same again');
             done();
           });
         });
@@ -204,14 +204,14 @@ suite('Batoh', function() {
     });
 
     test('add more', function(done) {
-      pocket.openDB(function(err) {
+      db.open(function(err) {
         if (err) throw err;
-        pocket.add(store, gates, function(err, result) {
+        db.add(store, gates, function(err, result) {
           if (err) throw err;
-          pocket.get(store, gates[0].keyLock, function(err, result) {
+          db.get(store, gates[0].keyLock, function(err, result) {
             if (err) throw err;
-            pocket.closeDB();
-            assert.equal(gates[0].keyLock, result.keyLock, 'it is one of the gates');
+            db.close();
+            assert.equal(gates[0].keyLock, result[0].keyLock, 'it is one of the gates');
             done();
           });
         });
@@ -219,14 +219,14 @@ suite('Batoh', function() {
     });
 
     test('update more', function(done) {
-      pocket.openDB(function(err) {
+      db.open(function(err) {
         if (err) throw err;
-        pocket.put(store, different, function(err, result) {
+        db.put(store, different, function(err, result) {
           if (err) throw err;
-          pocket.get(store, gates[0].keyLock, function(err, result) {
+          db.get(store, gates[0].keyLock, function(err, result) {
             if (err) throw err;
-            pocket.closeDB();
-            assert.equal(different[0].name, result.name, 'more of the changed');
+            db.close();
+            assert.equal(different[0].name, result[0].name, 'more of the changed');
             done();
           });
         });
@@ -240,13 +240,13 @@ suite('Batoh', function() {
         direction: 'next',
         limit: 2
       };
-      pocket.openDB(function(err) {
+      db.open(function(err) {
         if (err) throw err;
-        pocket.put(store, other, function(err, result) {
+        db.put(store, other, function(err, result) {
           if (err) throw err;
-          pocket.query(store, query, function(err, result) {
+          db.query(store, query, function(err, result) {
             if (err) throw err;
-            pocket.closeDB();
+            db.close();
             assert.lengthOf(result, 2, 'limit the number of results');
             assert.equal(result[0].keyLock, other[1].keyLock, 'first result has number of lowerBound');
             assert.equal(result[1].keyLock, other[2].keyLock, 'direction is \'next\'');
@@ -257,18 +257,18 @@ suite('Batoh', function() {
     });
 
     test('delete one', function(done) {
-      pocket.openDB(function(err) {
+      db.open(function(err) {
         if (err) throw err;
-        pocket.add(store, poor, function(err, result) {
+        db.add(store, poor, function(err, result) {
           if (err) throw err;
-          pocket.get(store, poor.keyLock, function(err, result) {
+          db.get(store, poor.keyLock, function(err, result) {
             if (err) throw err;
-            assert.equal(poor.keyLock, result.keyLock, 'inserted and retrieved');
-            pocket.delete(store, poor.keyLock, function(err, result) {
+            assert.equal(poor.keyLock, result[0].keyLock, 'inserted and retrieved');
+            db.delete(store, poor.keyLock, function(err, result) {
               if (err) throw err;
-              pocket.get(store, poor.keyLock, function(err, result) {
-                pocket.closeDB();
-                assert.isUndefined(result, 'gone forever');
+              db.get(store, poor.keyLock, function(err, result) {
+                db.close();
+                assert.isUndefined(result[0], 'gone forever');
                 done();
               });
             });
@@ -278,13 +278,13 @@ suite('Batoh', function() {
     });
 
     test('clear rest', function(done) {
-      pocket.openDB(function(err) {
+      db.open(function(err) {
         if (err) throw err;
-        pocket.clear(store, function(err, result) {
+        db.clear(store, function(err, result) {
           if (err) throw err;
-          pocket.query(store, function(err, result) {
+          db.query(store, function(err, result) {
             if (err) throw err;
-            pocket.closeDB();
+            db.close();
             assert.lengthOf(result, 0, 'store is empty');
             done();
           });

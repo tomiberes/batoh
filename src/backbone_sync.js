@@ -8,10 +8,10 @@
  */
 
 var backboneSync = Batoh.backboneSync = function(method, object, options) {
-  var deferred = $.Deferred();
+  var deferred = jquery.Deferred();
   var data = object.toJSON();
-  var pocket;
-  // Collection, or models colleciton have to have attributes of database setup and it's store
+  var db;
+  // Collection, or models colleciton have to have attributes of db setup and it's store
   var setup;
   var store;
 
@@ -20,30 +20,29 @@ var backboneSync = Batoh.backboneSync = function(method, object, options) {
   if (data instanceof Array) {
     setup = object.setup;
     store = object.store;
-    pocket = new Batoh.Pocket(setup);
+    db = new Batoh.Database(setup);
 
-    pocket.openDB(function(err) {
+    db.open(function(err) {
       if (err) deferred.reject();
-      pocket.query(store, function(err, result) {
+      db.query(store, function(err, result) {
         if (err) {
           options.error(err);
           deferred.reject();
-          pocket.closeDB();
+          db.close();
           return;
         } else {
           options.success(result);
           deferred.resolve();
-          pocket.closeDB();
+          db.close();
           return;
         }
       });
     });
-
   // Model methods
   } else {
     setup = object.collection.setup;
     store = object.collection.store;
-    pocket = new Batoh.Pocket(setup);
+    db = new Batoh.Database(setup);
 
     // UUID to act as server ID for Backbone model replacing cID after sync
     if (!data.id) {
@@ -56,45 +55,45 @@ var backboneSync = Batoh.backboneSync = function(method, object, options) {
     // Mapping Backbone.sync calls to Batoh IndexedDB calls
     var methodMap = {
       'create': function (callback) {
-        pocket.add(store, data, callback);
+        db.add(store, data, callback);
       },
       'update': function (callback) {
-        pocket.put(store, data, callback);
+        db.put(store, data, callback);
       },
       // TODO: reject deferred
       'patch':  function (callback) {
         console.log('PATCH not implemented');
       },
       'delete': function (callback) {
-        pocket.delete(store, data[setup.stores[store].keyPath], callback);
+        db.delete(store, data[setup.stores[store].keyPath], callback);
       },
       'read': function (callback) {
-        pocket.get(store, data[setup.stores[store].keyPath], callback);
+        db.get(store, data[setup.stores[store].keyPath], callback);
       }
     };
 
-    pocket.openDB(function(err) {
+    db.open(function(err) {
       if (err) deferred.reject();
       methodMap[method](function (err, result) {
         if (err) {
           options.error(err);
           deferred.reject();
-          pocket.closeDB();
+          db.close();
           return;
         } else {
           // If it the operation wasn't `read`, have to
           // update timestamp of in memory model, setting Model.isNew() to false
           if (method !== 'read') {
             methodMap.read(function(err, result) {
-              options.success(result);
+              options.success(result[0]);
               deferred.resolve();
-              pocket.closeDB();
+              db.close();
               return;
             });
           } else {
-            options.success(result);
+            options.success(result[0]);
             deferred.resolve();
-            pocket.closeDB();
+            db.close();
             return;
           }
         }

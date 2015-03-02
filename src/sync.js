@@ -33,7 +33,7 @@
  */
 
 var sync = Batoh.sync = function(setup, store, options) {
-  var pocket = new Batoh.Pocket(setup);
+  var db = new Batoh.Database(setup);
   var url = '/' + store || options.url;
   // Optional callbacks
   if (options.onComplete) syncComplete = options.onComplete;
@@ -45,7 +45,7 @@ var sync = Batoh.sync = function(setup, store, options) {
   // Initiate sync by fetching last sync timestamp from store
   getLastSync();
 
-    function getLastSync(handleError) {
+  function getLastSync(handleError) {
     // Get first highest record of `timestamp` from store
     var query = {
       index: 'timestamp',
@@ -53,13 +53,13 @@ var sync = Batoh.sync = function(setup, store, options) {
       direction: 'prev',
       limit: 1
     };
-    pocket.openDB(function() {
-      pocket.query(store, query, function(err, result) {
+    db.open(function() {
+      db.query(store, query, function(err, result) {
         if (err) handleError(err);
         // If there isn't any result set timestamp to 0,
         // fetch everything from the server
         var lastSync = result[0] ? result[0].timestamp : 0;
-        pocket.closeDB();
+        db.close();
         // Continue with fetching remote records
         getRemoteRecords(lastSync);
       });
@@ -86,12 +86,12 @@ var sync = Batoh.sync = function(setup, store, options) {
 
   function localUpdate(remoteRecords) {
     // If there no remote records have been fetched goes straight to `getDirtyRecords`
-    var count = makeCounter(remoteRecords.length, pocket, getDirtyRecords);
-    pocket.openDB(function() {
+    var count = makeCounter(remoteRecords.length, db, getDirtyRecords);
+    db.open(function() {
       if (err) return handleError(err);
       remoteRecords.forEach(function(remote, index, array) {
-        pocket.get(store, remote.id, function(err, result) {
-          var local = result;
+        db.get(store, remote.id, function(err, result) {
+          var local = result[0];
           if (err) return handleError(err);
           if (local) {
             // Conflict
@@ -100,20 +100,20 @@ var sync = Batoh.sync = function(setup, store, options) {
               resolveConflict(local, remote, count);
             // Deletted from different client
             } else if (remote.deleted === true) {
-              pocket.delete(store, remote.id, function(err, result) {
+              db.delete(store, remote.id, function(err, result) {
                 if (err) return handleError(err);
                 count();
               });
             // Updated from diferrent client
             } else {
-              pocket.put(store, remote, function(err, result) {
+              db.put(store, remote, function(err, result) {
                 if (err) return handleError(err);
                 count();
               });
             }
           // New record
           } else {
-            pocket.add(store, remote, function(err, result) {
+            db.add(store, remote, function(err, result) {
               if (err) return handleError(err);
               count();
             });
@@ -149,10 +149,10 @@ var sync = Batoh.sync = function(setup, store, options) {
       }
     };
     // Perform the query on the store
-    pocket.openDB(function() {
-      pocket.query(store, query, each, function(err, result) {
+    db.open(function() {
+      db.query(store, query, each, function(err, result) {
         if (err) handleError(err);
-        pocket.closeDB();
+        db.close();
         // Continue with remote update
         remoteUpdate();
       });
@@ -222,18 +222,18 @@ var sync = Batoh.sync = function(setup, store, options) {
 
   // Update local record after successful sync
   function updateRecord(record, count) {
-    pocket.openDB(function() {
+    db.open(function() {
       // Delete record only after server knows about the delete
       if (record.deleted) {
-        pocket.delete(store, record.id, function(err, result) {
-          pocket.closeDB();
+        db.delete(store, record.id, function(err, result) {
+          db.close();
           count();
         });
       // Change state of the local record for next sync and do `count`
       } else {
         record.dirty = false;
-        pocket.put(store, record, function(err, result) {
-          pocket.closeDB();
+        db.put(store, record, function(err, result) {
+          db.close();
           count();
         });
       }
@@ -252,15 +252,15 @@ var sync = Batoh.sync = function(setup, store, options) {
   }
 
   // Counter for async operations
-  function makeCounter(limit, pocket, callback) {
+  function makeCounter(limit, db, callback) {
     if (limit === 0) return callback();
     var counter = limit;
     var count = function() {
       counter--;
       if (counter === 0) {
-        // `pocket` or `null` have to be passed as second parameter
-        if (pocket) {
-          pocket.closeDB();
+        // `db` or `null` have to be passed as second parameter
+        if (db) {
+          db.close();
         }
         return callback();
       }

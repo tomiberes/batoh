@@ -1,8 +1,13 @@
 ##Batoh.js
 
-Wrapper for IndexedDB API with NodeJS callback convetions.
+Wrapper for IndexedDB API makes common operations simple and does not hide the
+original API, unifies the error handling using NodeJS callback convetions.
 
-Optional Backbone to IndexedDB sync replacement and simple server sync.
+Optional Backbone to IndexedDB sync replacement included.
+
+```
+npm install batoh
+```
 
 ###Usage:
 
@@ -49,18 +54,18 @@ Only base wrapper is included by default in dist/ directory.
 To include extras in the build you need to have `gulp` installed and run command
 
 ```
-gulp dist --backbone --sync
+gulp dist --backbone
 ```
 
 Options:
 
 `--backbone` adds Batoh.backboneSync module.
 
-`--sync` adds Batoh.sync module.
+`--sync` adds Batoh.sync module, to be deprecated.
 
 #####`Batoh.backboneSync(method, object, options)`
 Can be used to replace Backbone.sync, adds UUID attribute as an ID.
-It needs to be done manualy:
+It is needed to be done specifically:
 
 ```js
 Backbone.sync = Batoh.backboneSync;
@@ -71,7 +76,8 @@ Can only `fetch` a collection.
 Model `PATCH` operation is not supported.
 
 #####`Batoh.sync(store, setup, options)`
-Simple server synchronization with assumptions.
+Simple server synchronization with assumptions. This module is going to be
+removed in future.
 
 ###API:
 
@@ -197,7 +203,7 @@ Delete one or more records specified by the key.
 
 `callback` Function, gets two arguments `(err, result)`,
   if there is no Error `err` is `null`. `result` is always an Array of the
-  results of delete operations (undefined).
+  results of delete operations `undefined`.
 
 Example:
 
@@ -273,8 +279,6 @@ Example:
 
 ###TODO:
   more tests
-
-  Batoh.sync conflict resolution and testing
 
   `examples/`
 

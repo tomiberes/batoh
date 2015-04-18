@@ -63,23 +63,23 @@ Database.prototype = {
    * @param {Function} callback - gets one argument `(err)`,
    *  if there is no error `err` is null.
    */
-  open: function(callback) {
+  open: function(cb) {
     var self = this;
     var request;
     try {
       request = IndexedDB.open(self.setup.database, self.setup.version);
     } catch (err) {
-      if (isFunction(callback)) return callback(err);
+      if (isFunction(cb)) return cb(err);
     }
     request.onsuccess = function(event) {
       self.idb = event.target.result;
-      if (isFunction(callback)) return callback(null);
+      if (isFunction(cb)) return cb(null);
     };
     request.onerror = function(event) {
-      if (isFunction(callback)) return callback(event.target.error);
+      if (isFunction(cb)) return cb(event.target.error);
     };
     request.onblocked = function(event) {
-      if (isFunction(callback)) return callback(event.target.error);
+      if (isFunction(cb)) return cb(event.target.error);
     };
     request.onupgradeneeded = function(event) {
       try {
@@ -95,13 +95,13 @@ Database.prototype = {
           }
         }
       } catch (err) {
-        if (isFunction(callback)) return callback(err);
+        if (isFunction(cb)) return cb(err);
       }
     };
   },
 
   /**
-   * Always have to close the database in callback,
+   * Always have to close the database in cb,
    *  after the last operation in chain.
    */
   close: function() {
@@ -122,13 +122,13 @@ Database.prototype = {
    * current spec is unclear and outcome is not usable,
    * thus using only the `onsuccess` handler.
    */
-  destroy: function(callback) {
+  destroy: function(cb) {
     if (IndexedDB.deleteDatabase) {
       var request = IndexedDB.deleteDatabase(this.setup.database);
       // It's always in an order of onblocked -> onsuccess,
       // ignoring other handlers, for now.
       request.onsuccess = function(event) {
-        if (isFunction(callback)) return callback(null, event.target.result);
+        if (isFunction(cb)) return cb(null, event.target.result);
       };
       request.onerror = function(event) {
       };
@@ -149,21 +149,21 @@ Database.prototype = {
    * @param {Object} result - Object that will be returned as a result of
    *  the transaction.
    */
-  transaction: function(storeNames, mode, result, callback) {
+  transaction: function(storeNames, mode, result, cb) {
     var transaction;
     try {
       transaction = this.idb.transaction(storeNames, mode);
     } catch (err) {
-      if (isFunction(callback)) return callback(err);
+      if (isFunction(cb)) return cb(err);
     }
     transaction.onabort = function(event) {
-      if (isFunction(callback)) return callback(event.target.error);
+      if (isFunction(cb)) return cb(event.target.error);
     };
     transaction.onerror = function(event) {
-      if (isFunction(callback)) return callback(event.target.error);
+      if (isFunction(cb)) return cb(event.target.error);
     };
     transaction.oncomplete = function(event) {
-      if (isFunction(callback)) return callback(null, result);
+      if (isFunction(cb)) return cb(null, result);
     };
     return transaction;
   },
@@ -176,11 +176,11 @@ Database.prototype = {
    * @param {Function} callback - gets one argument `(err)`,
    *  if there is no error, it won't be called.
    */
-  store: function(storeName, transaction, callback) {
+  store: function(storeName, transaction, cb) {
     try {
       return transaction.objectStore(storeName);
     } catch (err) {
-      if (isFunction(callback)) return callback(err);
+      if (isFunction(cb)) return cb(err);
     }
   },
 
@@ -198,7 +198,7 @@ Database.prototype = {
    *  if there is no Error `err` is `null`. `result` is always an Array of keys
    *  for the values added.
    */
-  add: function(storeName, value, key, callback) {
+  add: function(storeName, value, key, cb) {
     // For usage of out-of-line keys a `key` argument have to be specified,
     // otherwise the `request` will be made assuming in-line key or key generator.
     // For detailed possibilities see what you can't do in `DataError` section here:
@@ -212,7 +212,7 @@ Database.prototype = {
       }
     }
     if (arguments.length === 3) {
-      callback = key;
+      cb = key;
       key = null;
     }
     if (!Array.isArray(value)) {
@@ -222,21 +222,20 @@ Database.prototype = {
     }
 
     var result = [];
-    var transaction = this.transaction(storeName, MODE.READ_WRITE, result,
-      callback);
-    var store = this.store(storeName, transaction, callback);
+    var transaction = this.transaction(storeName, MODE.READ_WRITE, result, cb);
+    var store = this.store(storeName, transaction, cb);
     var _add = function(value, key) {
       var request;
       try {
         request = store.add(value, key);
       } catch (err) {
-        if (isFunction(callback)) return callback(err);
+        if (isFunction(cb)) return cb(err);
       }
       request.onsuccess = function(event) {
         result.push(event.target.result);
       };
       request.onerror = function(event) {
-        if (isFunction(callback)) return callback(event.target.error);
+        if (isFunction(cb)) return cb(event.target.error);
       };
     };
     for (var i = 0, l = data.value.length; i < l ; i++) {
@@ -262,7 +261,7 @@ Database.prototype = {
    *  if there is no Error `err` is `null`. `result` is always an Array of keys
    *  of the values put.
    */
-  put: function(storeName, value, key, callback) {
+  put: function(storeName, value, key, cb) {
     // For usage of out-of-line keys a `key` argument have to be specified,
     // otherwise the `request` will be made assuming in-line key or key generator.
     // For detailed possibilities see what you can't do in DataError section here:
@@ -276,7 +275,7 @@ Database.prototype = {
       }
     }
     if (arguments.length === 3) {
-      callback = key;
+      cb = key;
       key = null;
     }
     if (!Array.isArray(value)) {
@@ -286,21 +285,20 @@ Database.prototype = {
     }
 
     var result = [];
-    var transaction = this.transaction(storeName, MODE.READ_WRITE, result,
-      callback);
-    var store = this.store(storeName, transaction, callback);
+    var transaction = this.transaction(storeName, MODE.READ_WRITE, result, cb);
+    var store = this.store(storeName, transaction, cb);
     var _put = function(value, key) {
       var request;
       try {
         request = store.put(value, key);
       } catch (err) {
-        if (isFunction(callback)) return callback(err);
+        if (isFunction(cb)) return cb(err);
       }
       request.onsuccess = function(event) {
         result.push(event.target.result);
       };
       request.onerror = function(event) {
-        if (isFunction(callback)) return callback(event.target.error);
+        if (isFunction(cb)) return cb(event.target.error);
       };
     };
     for (var i = 0, l = data.value.length; i < l; i++) {
@@ -323,27 +321,26 @@ Database.prototype = {
    *  if there is no Error `err` is `null`. `result` is always an Array
    *  of the retrieved objects.
    */
-  get: function(storeName, key, callback) {
+  get: function(storeName, key, cb) {
     if (!Array.isArray(key)) {
       key = [key];
     }
 
     var result = [];
-    var transaction = this.transaction(storeName, MODE.READ_ONLY, result,
-      callback);
-    var store = this.store(storeName, transaction, callback);
+    var transaction = this.transaction(storeName, MODE.READ_ONLY, result, cb);
+    var store = this.store(storeName, transaction, cb);
     var _get = function(key) {
       var request;
       try {
         request = store.get(key);
       } catch (err) {
-        if (isFunction(callback))return callback(err);
+        if (isFunction(cb))return cb(err);
       }
       request.onsuccess = function(event) {
         result.push(event.target.result);
       };
       request.onerror = function(event) {
-        if (isFunction(callback)) return callback(event.target.error);
+        if (isFunction(cb)) return cb(event.target.error);
       };
     };
     for (var i = 0, l = key.length; i < l; i++) {
@@ -360,27 +357,26 @@ Database.prototype = {
    *  if there is no Error `err` is `null`. `result` is always an Array of the
    *  results of delete operations (undefined).
    */
-  delete: function(storeName, key, callback) {
+  delete: function(storeName, key, cb) {
     if (!Array.isArray(key)) {
       key = [key];
     }
 
     var result = [];
-    var transaction = this.transaction(storeName, MODE.READ_WRITE, result,
-      callback);
-    var store = this.store(storeName, transaction, callback);
+    var transaction = this.transaction(storeName, MODE.READ_WRITE, result, cb);
+    var store = this.store(storeName, transaction, cb);
     var _del = function(key) {
       var request;
       try {
         request = store.delete(key);
       } catch (err) {
-        if (isFunction(callback)) return callback(err);
+        if (isFunction(cb)) return cb(err);
       }
       request.onsuccess = function(event) {
         result.push(event.target.result);
       };
       request.onerror = function(event) {
-        if (isFunction(callback)) return callback(event.target.error);
+        if (isFunction(cb)) return cb(event.target.error);
       };
     };
     for (var i = 0, l = key.length; i < l; i++) {
@@ -406,21 +402,20 @@ Database.prototype = {
    *  if there is no Error `err` is `null`. `result` is an Array of records,
    *  returned by the query.
    */
-  query: function(storeName, query, each, callback) {
+  query: function(storeName, query, each, cb) {
     if (arguments.length === 3) {
-      callback = each;
+      cb = each;
       each = null;
     }
     if (arguments.length === 2) {
-      callback = query;
+      cb = query;
       query = null;
       each = null;
     }
 
     var result = [];
-    var transaction = this.transaction(storeName, MODE.READ_ONLY, result,
-      callback);
-    var store = this.store(storeName, transaction, callback);
+    var transaction = this.transaction(storeName, MODE.READ_ONLY, result, cb);
+    var store = this.store(storeName, transaction, cb);
     var target = store;
     var request;
     try {
@@ -439,14 +434,15 @@ Database.prototype = {
         request = target.openCursor(query.range, query.direction);
       }
     } catch(err) {
-      if (isFunction(callback)) return callback(err);
+      if (isFunction(cb)) return cb(err);
     }
     request.onsuccess = function(event) {
       var cursor = event.target.result;
       if (cursor) {
         // Execute specified operation on each value
         if (isFunction(each)) {
-          each(cursor.value);
+          result.push(each(cursor.value));
+        // Gather all results according to query
         } else {
           result.push(cursor.value);
         }
@@ -460,14 +456,14 @@ Database.prototype = {
         try {
           cursor.continue();
         } catch (err) {
-          if (isFunction(callback)) return callback(err);
+          if (isFunction(cb)) return cb(err);
         }
       } else {
         // No more matching records
       }
     };
     request.onerror = function(event) {
-      if (isFunction(callback)) return callback(event.target.error);
+      if (isFunction(cb)) return cb(event.target.error);
     };
   },
 
@@ -478,22 +474,21 @@ Database.prototype = {
    * @param {Function} callback - gets one argument `(err)`,
    *  if there is no error `err` is null.
    */
-  count: function(storeName, callback) {
+  count: function(storeName, cb) {
     var result;
-    var transaction = this.transaction(storeName, MODE.READ_ONLY, result,
-      callback);
-    var store = this.store(storeName, transaction, callback);
+    var transaction = this.transaction(storeName, MODE.READ_ONLY, result, cb);
+    var store = this.store(storeName, transaction, cb);
     var request;
     try {
       request = store.count();
     } catch (err) {
-      if (isFunction(callback)) return callback(err);
+      if (isFunction(cb)) return cb(err);
     }
     request.onsuccess = function(event) {
       result = event.target.result;
     };
     request.onerror = function(event) {
-      if (isFunction(callback)) return callback(event.target.error);
+      if (isFunction(cb)) return cb(event.target.error);
     };
   },
 
@@ -504,22 +499,21 @@ Database.prototype = {
    * @param {Function} callback - gets one argument `(err)`,
    *  if there is no error `err` is null.
    */
-  clear: function(storeName, callback) {
+  clear: function(storeName, cb) {
     var result;
-    var transaction = this.transaction(storeName, MODE.READ_WRITE, result,
-      callback);
-    var store = this.store(storeName, transaction, callback);
+    var transaction = this.transaction(storeName, MODE.READ_WRITE, result, cb);
+    var store = this.store(storeName, transaction, cb);
     var request;
     try {
       request = store.clear();
     } catch (err) {
-      if (isFunction(callback)) return callback(err);
+      if (isFunction(cb)) return cb(err);
     }
     request.onsuccess = function(event) {
       result = event.target.result;
     };
     request.onerror = function(event) {
-      if (isFunction(callback)) return callback(event.target.error);
+      if (isFunction(cb)) return cb(event.target.error);
     };
   },
 

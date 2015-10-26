@@ -28,14 +28,14 @@ var isFunction = Batoh.isFunction = function(obj) {
 };
 
 /**
- *  Batoh `Database`/`Pocket` Constructor, creates a setup for specified database
+ *  Batoh `Database` Constructor, creates a setup for specified database
  *  (combination of name and version)
  *  Allows to perform CRUD operations, query, clearing the object store and close DB.
  *
  *  @constructor
  *  @param {Object} setup - Object used for configuration
  */
-var Database = Batoh.Pocket = Batoh.Database = function(options) {
+var Database = Batoh.Database = function(options) {
   options = options || {};
   // Default values provided, should be changed by passing `options` object
   this.setup = {

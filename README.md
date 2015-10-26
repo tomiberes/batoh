@@ -61,8 +61,6 @@ Options:
 
 `--backbone` adds Batoh.backboneSync module.
 
-`--sync` adds Batoh.sync module, to be deprecated.
-
 #####`Batoh.backboneSync(method, object, options)`
 Can be used to replace Backbone.sync, adds UUID attribute as an ID.
 It is needed to be done specifically:

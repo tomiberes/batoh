@@ -8,7 +8,6 @@ var gulp = require('gulp'),
 
 var sources = {
   batoh: './src/batoh.js',
-  sync: './src/sync.js',
   backbone: './src/backbone_sync.js',
 };
 
@@ -41,7 +40,6 @@ gulp.task('lint', function() {
 gulp.task('dist', function() {
   var src = [];
   src.push(sources.batoh);
-  if (util.env.sync) src.push(sources.sync);
   if (util.env.backbone) src.push(sources.backbone);
   return gulp.src(src)
     .pipe(concat('batoh.js'))

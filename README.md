@@ -1,4 +1,4 @@
-##Batoh.js
+## Batoh.js
 
 Wrapper for IndexedDB API makes common operations simple and does not hide the
 original API, unifies the error handling using NodeJS callback convetions.
@@ -9,7 +9,7 @@ Optional Backbone to IndexedDB sync replacement included.
 npm install batoh
 ```
 
-###Usage:
+### Usage:
 
 ```js
 setup: {
@@ -49,7 +49,7 @@ db.[method](store, [params], function(err, result) {
 
 More usage examples can be also found in tests.
 
-###Build:
+### Build:
 Only base wrapper is included by default in dist/ directory.
 To include extras in the build you need to have `gulp` installed and run command
 
@@ -61,7 +61,7 @@ Options:
 
 `--backbone` adds Batoh.backboneSync module.
 
-#####`Batoh.backboneSync(method, object, options)`
+##### `Batoh.backboneSync(method, object, options)`
 Can be used to replace Backbone.sync, adds UUID attribute as an ID.
 It is needed to be done specifically:
 
@@ -73,21 +73,21 @@ Can only `fetch` a collection.
 
 Model `PATCH` operation is not supported.
 
-#####`Batoh.sync(store, setup, options)`
+##### `Batoh.sync(store, setup, options)`
 Simple server synchronization with assumptions. This module is going to be
 removed in future.
 
-###API:
+### API:
 
-#####`Batoh`
+##### `Batoh`
 
 Top-level namespace, global object.
 
-#####`Batoh.Database(setup)`
+##### `Batoh.Database(setup)`
 
 Constructor, accepts a setup object.
 
-#####`Database.open(callback)`
+##### `Database.open(callback)`
 
 Open or create the database specified in `setup` passed to the constructor.
 
@@ -103,7 +103,7 @@ db.open(function() {
 });
 ```
 
-#####`Database.close()`
+##### `Database.close()`
 
 Always have to close the database in callback after the last operation in chain.
 
@@ -115,7 +115,7 @@ db.[method](store, [params], function(err, result) {
 });
 ```
 
-#####`Database.destroy(callback)`
+##### `Database.destroy(callback)`
 
 Delete the database. Once the operation is successful callback is invoked.
 
@@ -129,7 +129,7 @@ db.destroy(function(err, result) {
 });
 ```
 
-#####`Database.add(store, value, [key], callback)`
+##### `Database.add(store, value, [key], callback)`
 
 Add one or more records. If record already exist in object store,
   returns an Error.
@@ -152,7 +152,7 @@ Example:
 
 ```
 
-#####`Database.put(store, value, [key], callback)`
+##### `Database.put(store, value, [key], callback)`
 
 Put one or more records, updating existing or creating a new one.
 
@@ -191,7 +191,7 @@ Example:
 
 ```
 
-#####`Database.delete(store, key, callback)`
+##### `Database.delete(store, key, callback)`
 
 Delete one or more records specified by the key.
 
@@ -209,7 +209,7 @@ Example:
 
 ```
 
-#####`Database.query(store, [query], [each], callback)`
+##### `Database.query(store, [query], [each], callback)`
 
 Open a cursor and query the object store.
 
@@ -244,7 +244,7 @@ For `query` parameter examlpe look on `getLastSync` from sync.js.
 
 For `each` parameter example look on `getDirtyRecords` from sync.js.
 
-#####`Database.count(store, callback)`
+##### `Database.count(store, callback)`
 
 Count the objects in the store.
 
@@ -259,7 +259,7 @@ Example:
 
 ```
 
-#####`Database.clear(store, callback)`
+##### `Database.clear(store, callback)`
 
 Delete all records in the object store.
 
@@ -275,10 +275,10 @@ Example:
 ```
 
 
-###TODO:
+### TODO:
   more tests
 
   `examples/`
 
-#####Why the name?
+##### Why the name?
 A rucksack.
